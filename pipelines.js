@@ -2,7 +2,6 @@
 // FUNCIONALIDADE 1: Relatório de Tendências Pedagógicas (Tags mais usadas)
 // Objetivo: Descobrir quais são os temas (tags) mais abundantes no sistema 
 // para a faixa etária de "4 a 6 anos" em materiais já aprovados.
-// Diferencial: Usa $unwind para desmembrar o array de tags e $group para contar.
 // =========================================================================
 db.materiais.aggregate([
   { $match: { status: "aprovado", faixa_etaria: "4 a 6 anos" } },
@@ -19,7 +18,6 @@ db.materiais.aggregate([
 // FUNCIONALIDADE 2: Visualização Completa de uma Trilha de Aprendizagem
 // Objetivo: Quando o professor clica na Trilha "Semana de Ciências Naturais",
 // o sistema busca os detalhes dos materiais vinculados a ela para exibir na tela.
-// Diferencial: Usa $lookup para cruzar dados entre coleções diferentes (Trilhas -> Materiais).
 // =========================================================================
 db.trilhas.aggregate([
   { $match: { _id: "trl_001" } },
