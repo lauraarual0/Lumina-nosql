@@ -1,41 +1,84 @@
+use lumina_db;
+
 // =========================================================================
-// FUNCIONALIDADE 1: Relatório de Tendências Pedagógicas (Tags mais usadas)
-// Objetivo: Descobrir quais são os temas (tags) mais abundantes no sistema 
-// para a faixa etária de "4 a 6 anos" em materiais já aprovados.
+// FUNCIONALIDADE 1: Ranking de Temas Pedagógicos (Tags mais usadas)
+// Objetivo: Mostrar à coordenação quais temas (tags) mais aparecem em 
+// materiais já aprovados em todas as trilhas do sistema.
+// Operadores-chave: $unwind (duplo), $match, $group, $sort
 // =========================================================================
-db.materiais.aggregate([
-  { $match: { status: "aprovado", faixa_etaria: "4 a 6 anos" } },
-  { $unwind: "$tags" }, // Separa o array de tags em documentos individuais
-  { $group: { 
-      _id: "$tags", 
-      quantidade_materiais: { $sum: 1 } 
-    } 
+db.trilhas.aggregate([
+  { $unwind: "$materiais" },
+  { $match: { "materiais.status": "aprovado" } },
+  { $unwind: "$materiais.tags" },
+  {
+    $group: {
+      _id: "$materiais.tags",
+      total_aparicoes: { $sum: 1 }
+    }
   },
-  { $sort: { quantidade_materiais: -1 } } // Ordena do mais usado para o menos usado
+  { $sort: { total_aparicoes: -1 } }
 ]);
 
 // =========================================================================
-// FUNCIONALIDADE 2: Visualização Completa de uma Trilha de Aprendizagem
-// Objetivo: Quando o professor clica na Trilha "Semana de Ciências Naturais",
-// o sistema busca os detalhes dos materiais vinculados a ela para exibir na tela.
+// FUNCIONALIDADE 2: Painel de Prontidão das Trilhas
+// Objetivo: Calcular, sem desmembrar os documentos, quantos materiais cada 
+// trilha possui, quantos estão aprovados, o percentual de aprovação e gerar 
+// um selo automático de prontidão para o professor.
+// Operadores-chave: $addFields, $filter, $size, $cond, $round, $switch, $project
 // =========================================================================
 db.trilhas.aggregate([
-  { $match: { _id: "trl_001" } },
-  { 
-    $lookup: {
-      from: "materiais",         // Coleção alvo
-      localField: "materiais_ids", // Campo na coleção trilhas
-      foreignField: "_id",       // Campo correspondente na coleção materiais
-      as: "detalhes_dos_materiais" // Nome do novo array gerado com os resultados
+  {
+    $addFields: {
+      total_materiais: { $size: "$materiais" },
+      materiais_aprovados: {
+        $size: {
+          $filter: {
+            input: "$materiais",
+            as: "mat",
+            cond: { $eq: ["$$mat.status", "aprovado"] }
+          }
+        }
+      }
+    }
+  },
+  {
+    $addFields: {
+      percentual_aprovacao: {
+        $cond: [
+          { $eq: ["$total_materiais", 0] },
+          0,
+          {
+            $round: [
+              { $multiply: [{ $divide: ["$materiais_aprovados", "$total_materiais"] }, 100] },
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    $addFields: {
+      status_prontidao: {
+        $switch: {
+          branches: [
+            { case: { $eq: ["$percentual_aprovacao", 100] }, then: "Pronta para Aula" },
+            { case: { $gt: ["$percentual_aprovacao", 0] }, then: "Parcialmente Aprovada" }
+          ],
+          default: "Pendente de Curadoria"
+        }
+      }
     }
   },
   {
     $project: {
       titulo: 1,
-      criado_por: 1,
-      "detalhes_dos_materiais.titulo": 1,
-      "detalhes_dos_materiais.tipo": 1,
-      "detalhes_dos_materiais.tags": 1
+      faixa_etaria: 1,
+      "criador.nome": 1,
+      total_materiais: 1,
+      materiais_aprovados: 1,
+      percentual_aprovacao: 1,
+      status_prontidao: 1
     }
   }
 ]);
