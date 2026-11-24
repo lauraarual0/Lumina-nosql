@@ -1,11 +1,14 @@
 # Lumina - Plataforma de Curadoria Digital Pedagógica
 
-## Descrição do Sistema (Atividade A0 e A1)
-O Lumina é um sistema SaaS institucional para escolas de educação infantil. Seu objetivo é mitigar a sobrecarga de conteúdos digitais, servindo como um repositório onde materiais educacionais (vídeos, cartilhas, jogos) passam por uma curadoria pedagógica antes de serem liberados para os professores montarem seus planos de aula (Trilhas).
+## Descrição do Sistema (A0 e A1)
+O Lumina é uma plataforma SaaS institucional voltada para escolas de educação infantil. Seu objetivo é combater a sobrecarga de conteúdos digitais, oferecendo um acervo de planos de aula (Trilhas) compostos por materiais educacionais (vídeos, cartilhas em PDF, jogos interativos) que passam por curadoria pedagógica antes da aplicação em sala.
 
-A arquitetura NoSQL foi escolhida porque permite flexibilidade polimórfica: um vídeo e um PDF possuem atributos técnicos completamente diferentes, mas habitam a mesma coleção `materiais` sem gerar colunas nulas, otimizando o armazenamento e a busca.
+## Arquitetura NoSQL (Modelo de Agregação Puro)
+O banco de dados foi modelado no **MongoDB** seguindo o princípio da desnormalização e do modelo de agregação puro.
 
-## Estrutura de Coleções
-1. **usuarios:** Dados e perfis de acesso (colaborador vs. curador).
-2. **materiais:** O acervo curado com metadados pedagógicos e técnicos.
-3. **trilhas:** Planos de aula criados pelos professores, que referenciam os IDs dos materiais.
+1. **`usuarios`:** Armazena dados de autenticação e controle de acesso (`curador` vs. `colaborador`). Mantida isolada por questões de segurança e para futura integração de cache de login.
+2. **`trilhas`:** Coleção principal (Agregado). Cada documento de trilha embute os dados do criador e o array completo de `materiais`. Isso garante leitura instantânea da tela do plano de aula e aproveita o polimorfismo do NoSQL para armazenar vídeos, PDFs e jogos com atributos técnicos distintos dentro da mesma estrutura.
+
+## Funcionalidades Implementadas (A2)
+* **Pipeline 1 (Ranking de Temas Pedagógicos):** Desmembra os arrays de materiais e tags (`$unwind`) para contabilizar (`$group`) os assuntos mais frequentes entre os conteúdos aprovados.
+* **Pipeline 2 (Painel de Prontidão das Trilhas):** Analisa os materiais internamente sem desmembrar os documentos (`$filter`, `$size`), calcula o percentual de aprovação e classifica cada trilha automaticamente (`$switch`).
