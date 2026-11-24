@@ -12,3 +12,7 @@ O banco de dados foi modelado no **MongoDB** seguindo o princípio da desnormali
 ## Funcionalidades Implementadas (A2)
 * **Pipeline 1 (Ranking de Temas Pedagógicos):** Desmembra os arrays de materiais e tags (`$unwind`) para contabilizar (`$group`) os assuntos mais frequentes entre os conteúdos aprovados.
 * **Pipeline 2 (Painel de Prontidão das Trilhas):** Analisa os materiais internamente sem desmembrar os documentos (`$filter`, `$size`), calcula o percentual de aprovação e classifica cada trilha automaticamente (`$switch`).
+
+## Evidências de Execução
+![Pipeline 1](resultado_p1.png)
+![Pipeline 2](resultado_p2.png)
