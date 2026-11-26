@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pymongo
+redis
+python-dotenv
+streamlit
+requests
+pandas
